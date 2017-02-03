@@ -28,10 +28,9 @@ class compareTableModel(viewTableModel):
             if role == QtCore.Qt.DisplayRole:           
                 return str(self.dataIn[x][y])
             elif self.showDiff and role == QtCore.Qt.BackgroundColorRole:
-                return QtGui.QBrush(QtCore.Qt.red)
-                if (self.dataAnother and x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
-                    and self.dataIn[x][y] != self.dataAnother[x][y]) or (self.dataAnother \
-                    and (x >= len(self.dataAnother) or y >= len(self.dataAnother[x]))):
+                if self.dataAnother and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
+                    and self.dataIn[x][y] != self.dataAnother[x][y]) or \
+                    x >= len(self.dataAnother) or y >= len(self.dataAnother[x])):
                         return QtGui.QBrush(QtCore.Qt.red)
                 elif x > 0:
                     if (y < len(self.dataIn[x-1]) and (self.dataIn[x][y] != self.dataIn[x-1][y])) \
