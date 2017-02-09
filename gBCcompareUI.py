@@ -22,10 +22,10 @@ class Ui_MainWindow(object):
         self.pb_compare.setMaximumSize(QtCore.QSize(80, 28))
         self.pb_compare.setObjectName("pb_compare")
         self.hLayout1.addWidget(self.pb_compare)
-        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_2.setMaximumSize(QtCore.QSize(80, 28))
-        self.pushButton_2.setObjectName("pushButton_2")
-        self.hLayout1.addWidget(self.pushButton_2)
+        self.pb_last = QtWidgets.QPushButton(self.centralwidget)
+        self.pb_last.setMaximumSize(QtCore.QSize(80, 28))
+        self.pb_last.setObjectName("pb_last")
+        self.hLayout1.addWidget(self.pb_last)
         self.pb_next = QtWidgets.QPushButton(self.centralwidget)
         self.pb_next.setMaximumSize(QtCore.QSize(80, 28))
         self.pb_next.setObjectName("pb_next")
@@ -48,6 +48,6 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pb_compare.setText(_translate("MainWindow", "compare"))
-        self.pushButton_2.setText(_translate("MainWindow", "last Diff"))
+        self.pb_last.setText(_translate("MainWindow", "last Diff"))
         self.pb_next.setText(_translate("MainWindow", "next Diff"))
 
