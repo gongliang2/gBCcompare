@@ -17,6 +17,8 @@ class compareTableModel(viewTableModel):
     def __init__(self, parent=None):
         super(compareTableModel, self).__init__()
         self.dataAnother = None
+        self.__currentDiff = ()
+
         
     def updateData2compare(self, data):
         self.dataAnother = data
@@ -28,7 +30,9 @@ class compareTableModel(viewTableModel):
             if role == QtCore.Qt.DisplayRole:           
                 return str(self.dataIn[x][y])
             elif self.showDiff and role == QtCore.Qt.BackgroundColorRole:
-                if self.dataAnother and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
+                if self.__currentDiff and (x, y) == self.__currentDiff:
+                    return QtGui.QBrush(QtCore.Qt.blue)
+                elif self.dataAnother and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
                     and self.dataIn[x][y] != self.dataAnother[x][y]) or \
                     x >= len(self.dataAnother) or y >= len(self.dataAnother[x])):
                         return QtGui.QBrush(QtCore.Qt.red)
@@ -36,7 +40,10 @@ class compareTableModel(viewTableModel):
                     if (y < len(self.dataIn[x-1]) and (self.dataIn[x][y] != self.dataIn[x-1][y])) \
                     or (y >= len(self.dataIn[x-1]) and self.dataIn[x][y]):
                         return QtGui.QBrush(QtCore.Qt.yellow)
-
+        
+    
+    def updateCompareCell(self, index):
+        self.__currentDiff = index
 
 class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
     
@@ -63,7 +70,7 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
         
         
     def tryCompare(self):
-        if self.viewer1.myModel.dataIn and self.viewer2.myModel.dataIn:
+        if self.viewer1.myModel and self.viewer1.myModel.dataIn and self.viewer2.myModel.dataIn:
             model1 = compareTableModel(self)
             model1.update(self.viewer1.myModel.dataIn, self.viewer1.cb_diff.isChecked())
             model1.dataAnother = self.viewer2.myModel.dataIn
@@ -74,6 +81,8 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewer2.myModel = model2
             self.viewer1.table.setModel(self.viewer1.myModel)
             self.viewer2.table.setModel(self.viewer2.myModel)
+        else:
+            QtWidgets.QMessageBox.warning(self, 'Warning', 'no enough data to compare.')
             
     def synchScrollbar(self):
         if self.viewer1.table and self.viewer2.table:
@@ -126,12 +135,15 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
         return False
                         
     def getNextDiff(self):
-        if self.__idx4Diffs + 1 < len(self.__diffs):
-            self.__idx4Diffs += 1
-            self.setScrollBar(self.__diffs[self.__idx4Diffs])
-        elif (not self.__searchFinished) and self.getNewDiff():
-            self.__idx4Diffs += 1
-            self.setScrollBar(self.__diffs[self.__idx4Diffs])
+        if type(self.viewer1.myModel) is compareTableModel:
+            if self.__idx4Diffs + 1 < len(self.__diffs):
+                self.__idx4Diffs += 1
+                self.setScrollBar(self.__diffs[self.__idx4Diffs])
+            elif (not self.__searchFinished) and self.getNewDiff():
+                self.__idx4Diffs += 1
+                self.setScrollBar(self.__diffs[self.__idx4Diffs])
+        else:
+            QtWidgets.QMessageBox.information(self, 'Info', 'press first the compare button.')
             
             
     def getLastDiff(self):
@@ -144,17 +156,29 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             x, y = index
             print(index)
             modelIdx = QtCore.QModelIndex()
-            modelIdx.row, modelIdx.column = x, y
+            
             if x < len(self.viewer1.myModel.dataIn) and y < len(self.viewer1.myModel.dataIn[x]):
                 self.viewer1.table.horizontalScrollBar().setValue(y)
                 self.viewer1.table.verticalScrollBar().setValue(x)
-                self.viewer1.table.selectionModel().select(modelIdx, QtCore.QItemSelectionModel.SelectCurrent)
+                #self.viewer1.table.selectionModel().select(modelIdx, QtCore.QItemSelectionModel.SelectCurrent)
+                self.viewer1.myModel.updateCompareCell(index)
+                modelIdx.row, modelIdx.column = x, y
+                self.viewer1.table.dataChanged(modelIdx, modelIdx)
             else:
+                self.viewer1.myModel.updateCompareCell(())
+                self.viewer1.table.dataChanged(modelIdx, modelIdx)
+            
+            if x < len(self.viewer2.myModel.dataIn) and y < len(self.viewer2.myModel.dataIn[x]):
                 self.viewer2.table.horizontalScrollBar().setValue(y)
                 self.viewer2.table.verticalScrollBar().setValue(x)
-                self.viewer2.table.selectionModel().select(modelIdx, QtCore.QItemSelectionModel.SelectCurrent)
-            
-            
+                #self.viewer2.table.selectionModel().select(modelIdx, QtCore.QItemSelectionModel.SelectCurrent)
+                modelIdx.row, modelIdx.column = x, y
+                self.viewer2.myModel.updateCompareCell(index)
+                self.viewer2.table.dataChanged(modelIdx, modelIdx)
+            else:
+                self.viewer2.myModel.updateCompareCell(())
+                self.viewer2.table.dataChanged(modelIdx, modelIdx)
+                        
             
 #    def getSameShape2Compare(self):
 #        if self.viewer1.cb_csv.isChecked() or self.viewer2.cb_csv.isChecked():
