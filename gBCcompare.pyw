@@ -32,7 +32,7 @@ class compareTableModel(viewTableModel):
             elif self.showDiff and role == QtCore.Qt.BackgroundColorRole:
                 if self.__currentDiff and (x, y) == self.__currentDiff:
                     return QtGui.QBrush(QtCore.Qt.blue)
-                elif self.dataAnother and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
+                elif len(self.dataAnother) and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
                     and self.dataIn[x][y] != self.dataAnother[x][y]) or \
                     x >= len(self.dataAnother) or y >= len(self.dataAnother[x])):
                         return QtGui.QBrush(QtCore.Qt.red)
@@ -70,7 +70,7 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
         
         
     def tryCompare(self):
-        if self.viewer1.myModel and self.viewer1.myModel.dataIn and self.viewer2.myModel.dataIn:
+        if self.viewer1.myModel and len(self.viewer1.myModel.dataIn) and len(self.viewer2.myModel.dataIn):
             model1 = compareTableModel(self)
             model1.update(self.viewer1.myModel.dataIn, self.viewer1.cb_diff.isChecked())
             model1.dataAnother = self.viewer2.myModel.dataIn
@@ -90,26 +90,11 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewer2.table.verticalScrollBar().valueChanged.connect(self.viewer1.table.verticalScrollBar().setValue)
             self.viewer1.table.horizontalScrollBar().valueChanged.connect(self.viewer2.table.horizontalScrollBar().setValue)
             self.viewer2.table.horizontalScrollBar().valueChanged.connect(self.viewer1.table.horizontalScrollBar().setValue)
-            
-#    def getDiffs(self):
-##        for x, row in enumerate(zip(self.viewer1.myModel.dataIn, self.viewer2.myModel.dataIn)):
-##            for y, column in enumerate(zip(self.viewer1.myModel.dataIn[x], self.viewer2.myModel.dataIn[x])):
-##                if column[0] != column[1]:
-##                    self.__diffs.append((x, y))
-##                    self.__idx4Diffs = (x, y)
-##                    break
-#                
-#        for x in range(self.__idx4Diffs[0], min(len(self.viewer1.myModel.dataIn, self.viewer2.myModel.dataIn))):
-#            for y in range(self.__idx4Diffs[1], min(len(self.viewer1.myModel.dataIn[x]), len(self.viewer2.myModel.dataIn[x]))):
-#                if x != self.__idx4Diffs[0] or y != self.__idx4Diffs[1]:
-#                    if self.viewer1.myModel.dataIn[x][y] != self.viewer2.myModel.dataIn[x][y]:
-#                        self.__diffs.append((x, y))
-#                        return (x, y)
                     
         
     def getNewDiff(self):
-        if self.viewer1.myModel.dataIn and self.viewer2.myModel.dataIn:
-            row, column = (0, 0)
+        if len(self.viewer1.myModel.dataIn) and len(self.viewer2.myModel.dataIn):
+            row, column = (0, -1)   # they shall be different than (0, 0) or we will not be able to compare the (0,0) elements from 2 files with each other. Before we start to compare they are initialized with (0,-1) the closest value to the first real element.
             if self.__diffs and self.__idx4Diffs > -1:
                 row, column = self.__diffs[self.__idx4Diffs]
             rowMax = max(len(self.viewer1.myModel.dataIn), len(self.viewer2.myModel.dataIn))
@@ -120,7 +105,7 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
                         if not (x in range(len(self.viewer1.myModel.dataIn))) \
                         or not (y in range(len(self.viewer1.myModel.dataIn[x]))) \
                         or not (x in range(len(self.viewer2.myModel.dataIn))) \
-                        or not (y in range(len(self.viewer2.myModel.dataIn[x]))): # check if the index x, y is already out of range of any of the data in comparasion. It must be different between the 2 data
+                        or not (y in range(len(self.viewer2.myModel.dataIn[x]))): # check if the index x, y is already out of range of any of the data in comparasion. If yes, it must be a difference between the 2 data
                             self.__diffs.append((x, y))
                             return True
                         elif self.viewer1.myModel.dataIn[x][y] != self.viewer2.myModel.dataIn[x][y]:
@@ -178,13 +163,6 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 self.viewer2.myModel.updateCompareCell(())
                 self.viewer2.table.dataChanged(modelIdx, modelIdx)
-                        
-            
-#    def getSameShape2Compare(self):
-#        if self.viewer1.cb_csv.isChecked() or self.viewer2.cb_csv.isChecked():
-#            xMax = max(self.viewer1.myModel.rowCount(), self.viewer2.myModel.rowCount())
-#            yMax = max(self.viewer1.myModel.columnCount(), self.viewer2.myModel.columnCount())
-#            for oneRow in self.viewer1.myModel.dataIn:
                     
             
 

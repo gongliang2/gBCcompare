@@ -32,6 +32,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="pb_last">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="maximumSize">
          <size>
           <width>80</width>
@@ -45,6 +48,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="pb_next">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="maximumSize">
          <size>
           <width>80</width>
