@@ -47,9 +47,12 @@ class compareTableModel(viewTableModel):
 
 class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
     
+    version = 'V0.001'
+    
     def __init__(self, parent=None):
         super(gBCcompare, self).__init__()
         self.setupUi(self)
+        self.setWindowTitle(self.windowTitle() + 4*' ' + '-' + 4*' ' + gBCcompare.version)
         
         self.__idx4Diffs = -1   # store the current index in self.__diffs
         self.__diffs = []   # store indexes(x, y) of all discovered differences
