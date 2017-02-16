@@ -19,6 +19,9 @@
      <layout class="QHBoxLayout" name="hLayout1">
       <item>
        <widget class="QPushButton" name="pb_compare">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="maximumSize">
          <size>
           <width>80</width>
@@ -26,14 +29,14 @@
          </size>
         </property>
         <property name="text">
-         <string>compare</string>
+         <string>get all Diffs</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="pb_last">
         <property name="enabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="maximumSize">
          <size>
@@ -49,7 +52,7 @@
       <item>
        <widget class="QPushButton" name="pb_next">
         <property name="enabled">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="maximumSize">
          <size>

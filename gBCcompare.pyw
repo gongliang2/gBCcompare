@@ -29,17 +29,18 @@ class compareTableModel(viewTableModel):
         if x < len(self.dataIn) and y < len(self.dataIn[x]):
             if role == QtCore.Qt.DisplayRole:           
                 return str(self.dataIn[x][y])
-            elif self.showDiff and role == QtCore.Qt.BackgroundColorRole:
+            elif role == QtCore.Qt.BackgroundColorRole:
                 if self.__currentDiff and (x, y) == self.__currentDiff:
-                    return QtGui.QBrush(QtCore.Qt.blue)
-                elif len(self.dataAnother) and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
-                    and self.dataIn[x][y] != self.dataAnother[x][y]) or \
-                    x >= len(self.dataAnother) or y >= len(self.dataAnother[x])):
-                        return QtGui.QBrush(QtCore.Qt.red)
-                elif x > 0:
-                    if (y < len(self.dataIn[x-1]) and (self.dataIn[x][y] != self.dataIn[x-1][y])) \
-                    or (y >= len(self.dataIn[x-1]) and self.dataIn[x][y]):
-                        return QtGui.QBrush(QtCore.Qt.yellow)
+                    return QtGui.QBrush(QtCore.Qt.cyan)
+                if self.showDiff:
+                    if len(self.dataAnother) and ((x < len(self.dataAnother) and y < len(self.dataAnother[x]) \
+                        and self.dataIn[x][y] != self.dataAnother[x][y]) or \
+                        x >= len(self.dataAnother) or y >= len(self.dataAnother[x])):
+                            return QtGui.QBrush(QtCore.Qt.red)
+                    elif x > 0:
+                        if (y < len(self.dataIn[x-1]) and (self.dataIn[x][y] != self.dataIn[x-1][y])) \
+                        or (y >= len(self.dataIn[x-1]) and self.dataIn[x][y]):
+                            return QtGui.QBrush(QtCore.Qt.yellow)
         
     
     def updateCompareCell(self, index):
@@ -63,7 +64,7 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
         self.hLayout2.addWidget(self.viewer1)
         self.hLayout2.addWidget(self.viewer2)
 
-        self.pb_compare.clicked.connect(self.tryCompare)
+        self.pb_compare.clicked.connect(self.getAllDiffs)
         self.pb_next.clicked.connect(self.getNextDiff)
         self.pb_last.clicked.connect(self.getLastDiff)
         
@@ -84,6 +85,7 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewer2.myModel = model2
             self.viewer1.table.setModel(self.viewer1.myModel)
             self.viewer2.table.setModel(self.viewer2.myModel)
+            self.enableCompareButtons()   # compare is finished compare button can be disabled and enable navigation buttons of differences 
         else:
             QtWidgets.QMessageBox.warning(self, 'Warning', 'no enough data to compare.')
             
@@ -93,43 +95,65 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewer2.table.verticalScrollBar().valueChanged.connect(self.viewer1.table.verticalScrollBar().setValue)
             self.viewer1.table.horizontalScrollBar().valueChanged.connect(self.viewer2.table.horizontalScrollBar().setValue)
             self.viewer2.table.horizontalScrollBar().valueChanged.connect(self.viewer1.table.horizontalScrollBar().setValue)
-                    
-        
-    def getNewDiff(self):
+            self.tryCompare()    #when both table are available, it is ready to compare
+
+    def enableCompareButtons(self):
+        compareEnabled = (type(self.viewer1.myModel) is compareTableModel) and (type(self.viewer2.myModel) is compareTableModel)
+        self.pb_compare.setEnabled(compareEnabled)
+        self.pb_last.setEnabled(compareEnabled)
+        self.pb_next.setEnabled(compareEnabled)
+
+    def getNewDiff(self, justOneDiff=True):
         if len(self.viewer1.myModel.dataIn) and len(self.viewer2.myModel.dataIn):
             row, column = (0, -1)   # they shall be different than (0, 0) or we will not be able to compare the (0,0) elements from 2 files with each other. Before we start to compare they are initialized with (0,-1) the closest value to the first real element.
             if self.__diffs and self.__idx4Diffs > -1:
-                row, column = self.__diffs[self.__idx4Diffs]
+                row, column = self.__diffs[self.__idx4Diffs]    # we start just with the x, y position we found in the data
             rowMax = max(len(self.viewer1.myModel.dataIn), len(self.viewer2.myModel.dataIn))
+            
             for x in range(row, rowMax):
+                columnMax = 0
+                if x >= len(self.viewer1.myModel.dataIn):
+                    columnMax = len(self.viewer2.myModel.dataIn[x])
+                elif x >= len(self.viewer2.myModel.dataIn):
+                    columnMax = len(self.viewer1.myModel.dataIn[x])
+                    
+                if columnMax:
+                    for y in range(columnMax):
+                        self.__diffs.append((x, y))
+                    if justOneDiff:
+                        return # difference found, we return to display the difference in program
+                    else:
+                        continue # one line is finished because the line is not in viewer1 or not in viewer2
+                
                 columnMax = max(len(self.viewer1.myModel.dataIn[x]), len(self.viewer2.myModel.dataIn[x]))
                 for y in range(column, columnMax):
-                    if x != row or y != column: # we start just with the x, y position we found in the data, it is always safe. Then we go through the data, only when we move already to the next position in the data, we begin to find the next difference
-                        if not (x in range(len(self.viewer1.myModel.dataIn))) \
-                        or not (y in range(len(self.viewer1.myModel.dataIn[x]))) \
-                        or not (x in range(len(self.viewer2.myModel.dataIn))) \
-                        or not (y in range(len(self.viewer2.myModel.dataIn[x]))): # check if the index x, y is already out of range of any of the data in comparasion. If yes, it must be a difference between the 2 data
-                            self.__diffs.append((x, y))
-                            return True
+                    if x != row or y != column: # we start just with the x, y position in the data where we found the difference, it is always safe. Then we go through the data, only when we move away from the position of last difference, we begin to look for the next difference
+                        if y >= len(self.viewer1.myModel.dataIn[x]) \
+                        or y >= len(self.viewer2.myModel.dataIn[x]): # check if the index x, y is already out of range of any of the data in comparasion. If yes, it must be a difference between the 2 data
+                            self.__diffs.append((x, y))                            
+                            if justOneDiff:
+                                return
                         elif self.viewer1.myModel.dataIn[x][y] != self.viewer2.myModel.dataIn[x][y]:
                             self.__diffs.append((x, y))
-                            return True
-                        else:
-                            continue
+                            if justOneDiff:
+                                return
+                        
                     if row == rowMax and column == columnMax:
                         self.__searchFinished = True
                 column = 0  # one line is finished, so we shall begin with the first column again with the next line
                         
-        return False
+        return
                         
     def getNextDiff(self):
         if type(self.viewer1.myModel) is compareTableModel:
             if self.__idx4Diffs + 1 < len(self.__diffs):
                 self.__idx4Diffs += 1
                 self.setScrollBar(self.__diffs[self.__idx4Diffs])
-            elif (not self.__searchFinished) and self.getNewDiff():
-                self.__idx4Diffs += 1
-                self.setScrollBar(self.__diffs[self.__idx4Diffs])
+            elif (not self.__searchFinished):
+                self.getNewDiff()
+                if self.__idx4Diffs + 1 < len(self.__diffs):
+                    self.__idx4Diffs += 1
+                    self.setScrollBar(self.__diffs[self.__idx4Diffs])
         else:
             QtWidgets.QMessageBox.information(self, 'Info', 'press first the compare button.')
             
@@ -139,10 +163,14 @@ class gBCcompare(QtWidgets.QMainWindow, Ui_MainWindow):
             self.__idx4Diffs -= 1
             self.setScrollBar(self.__diffs[self.__idx4Diffs])
 
+    def getAllDiffs(self):
+        if not self.__searchFinished:
+            self.getNewDiff(False)
+
     def setScrollBar(self, index):
         if index and len(index) > 1:
             x, y = index
-            print(index)
+            # print(index)
             modelIdx = QtCore.QModelIndex()
             
             if x < len(self.viewer1.myModel.dataIn) and y < len(self.viewer1.myModel.dataIn[x]):
